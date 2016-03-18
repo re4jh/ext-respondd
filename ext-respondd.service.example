@@ -1,0 +1,13 @@
+[Unit]
+Description=ext-respondd (respondd Status for Servers)
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/usr/local/src/ext-respondd
+ExecStart=/usr/local/src/ext-respondd/ext-respondd.py
+
+[Install]
+WantedBy=multi-user.target
