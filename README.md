@@ -19,10 +19,12 @@ Startparameter for ext-respondd.
 Copy `config.json.example` to `config.json` and change it to match your server configuration.  
 (`cp config.json.example config.json`)
 
- * `batman` (string)
- * `fastd` (string)
- * `bridge` (string)
- * `fastd_socket` (string)
+ * `batman` (string) (Needed: typical bat0)
+ * `fastd` (string) (Needed: typical mesh-vpn)
+ * `bridge` (string) (Needed: typical br-client)
+ * `mesh-wlan` (string) (Optional: Ad-Hoc batman-Mesh)
+ * `wan` (string) (Needed: for primary MAC-Address and node-id)
+ * `fastd_socket` (string) (Optional: needed for uplink-flag)
 
 
 ### alias.json

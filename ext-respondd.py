@@ -4,22 +4,24 @@
 #          + https://github.com/freifunk-mwu/ffnord-alfred-announce
 #          + https://github.com/FreifunkBremen/respondd
 
-import json
+import sys
 import socket
+import select
+import struct
 import subprocess
+import argparse
 import re
-import netifaces as netif
-from cpuinfo import cpuinfo
 
 # Force encoding to UTF-8
 import locale                                         # Ensures that subsequent open()s
 locale.getpreferredencoding = lambda _=None: 'UTF-8'  # are UTF-8 encoded.
 
-import sys
 
-import struct
-import select
+import json
 import zlib
+
+import netifaces as netif
+from cpuinfo import cpuinfo
 
 def toUTF8(line):
     return line.decode("utf-8")
@@ -41,9 +43,9 @@ def merge(a, b):
 
     return a if b is None else b
 
-def getGateway(batadv_dev):
+def getGateway():
 #/sys/kernel/debug/batman_adv/bat0/gateways
-    output = subprocess.check_output(["batctl","-m",batadv_dev,"gwl","-n"])
+    output = subprocess.check_output(["batctl","-m",config['batman'],"gwl","-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
     gw = None
@@ -55,11 +57,12 @@ def getGateway(batadv_dev):
 
     return gw
 
-def getClients(batadv_dev):
+def getClients():
 #/sys/kernel/debug/batman_adv/bat0/transtable_local
-    output = subprocess.check_output(["batctl","-m",batadv_dev,"tl","-n"])
+    output = subprocess.check_output(["batctl","-m",config['batman'],"tl","-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
+    batadv_mac = getDevice_MAC(config['batman'])
 
     j = {"total": 0, "wifi": 0}
 
@@ -75,71 +78,72 @@ def getClients(batadv_dev):
         # * c0:11:73:b2:8f:dd   -1 [.P..W.]   1.710   (0xe680a836)
         ml = re.match(r"^\s\*\s([0-9a-f:]+)\s+-\d\s\[([RPNXWI\.]+)\]", line, re.I)
         if ml:
-            j["total"] += 1
-            if ml.group(2)[4] == 'W':
-                j["wifi"] += 1
+            if not batadv_mac == ml.group(1): # Filter bat0
+                j["total"] += 1
+                if ml.group(2)[4] == 'W':
+                    j["wifi"] += 1
 
     return j
 
-def getAddresses(bridge_dev):
-    ip_addrs = netif.ifaddresses(bridge_dev)
-    ip_list = []
+def getDevice_Addresses(dev):
+    l = []
 
     try:
-        for ip6 in netif.ifaddresses(bridge_dev)[netif.AF_INET6]:
+        for ip6 in netif.ifaddresses(dev)[netif.AF_INET6]:
             raw6 = ip6['addr'].split('%')
-            ip_list.append(raw6[0])
+            l.append(raw6[0])
     except:
         pass
 
-    return ip_list
+    return l
 
-def getMac_mesh(fastd_dev,meshmode=False):
-    interface = netif.ifaddresses(fastd_dev)
-    mesh = []
-    mac = None
-
+def getDevice_MAC(dev):
     try:
+        interface = netif.ifaddresses(dev)
         mac = interface[netif.AF_LINK]
-        mesh.append(mac[0]['addr'])
-    except:
-        KeyError
-
-    if meshmode:
-        return mesh
-    else:
         return mac[0]['addr']
+    except:
+        return None
 
-def getMesh_interfaces(batadv_dev):
-    output = subprocess.check_output(["batctl","-m",batadv_dev,"if"])
+def getMesh_Interfaces():
+    j = {}
+    output = subprocess.check_output(["batctl","-m",config['batman'],"if"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
-    mesh = []
 
     for line in lines:
-        dev_line = re.match(r"^([^:]*)", line)
-        interface = netif.ifaddresses(dev_line.group(0))
-        mac = interface[netif.AF_LINK]
-        mesh.append(mac[0]['addr'])
+        dev_re = re.match(r"^([^:]*)", line)
+        dev = dev_re.group(1)
+        j[dev] = getDevice_MAC(dev)
 
-    return mesh
+    return j
 
-def getBat0_mesh(batadv_dev):
-    output = subprocess.check_output(["batctl","-m",batadv_dev,"if"])
+def getBat0_Interfaces():
+    j = {}
+    output = subprocess.check_output(["batctl","-m",config['batman'],"if"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
-    j = {"tunnel" : []}
 
     for line in lines:
         dev_line = re.match(r"^([^:]*)", line)
         nif = dev_line.group(0)
-        interface = netif.ifaddresses(nif)
-        mac = interface[netif.AF_LINK]
-        j["tunnel"].append(mac[0]['addr'])
+
+        if_group = ""
+        if nif == config["fastd"]:
+            if_group = "tunnel"
+        elif "mesh-wlan" in config and nif == config["mesh-wlan"]:
+            if_group = "wireless"
+        else:
+            if_group = "other"
+
+        if not if_group in j:
+            j[if_group] = []
+
+        j[if_group].append(getDevice_MAC(nif))
 
     return j
 
-def getTraffic(batadv_dev):
+def getTraffic(): # BUG: falsches interfaces?
     return (lambda fields:
         dict(
             (key, dict(
@@ -154,7 +158,7 @@ def getTraffic(batadv_dev):
             'bytes' if key.endswith('_bytes') else 'dropped' if key.endswith('_dropped') else 'packets',
             value
         )
-        for key, value in map(lambda s: list(map(str.strip, s.split(': ', 1))), call(['ethtool', '-S', batadv_dev])[1:])
+        for key, value in map(lambda s: list(map(str.strip, s.split(': ', 1))), call(['ethtool', '-S', config['batman']])[1:])
     ))
 
 def getMemory():
@@ -164,14 +168,14 @@ def getMemory():
         if key in ('MemTotal', 'MemFree', 'Buffers', 'Cached')
     )
 
-def getFastd(fastd_socket): # Unused
+def getFastd():
     fastd_data = b""
     try:
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.connect(fastd_socket)
+        sock.connect(config["fastd_socket"])
     except socket.error as err:
         print("socket error: ", sys.stderr, err)
-        sys.exit(1)
+        return None
 
     while True:
         data = sock.recv(1024)
@@ -181,25 +185,93 @@ def getFastd(fastd_socket): # Unused
     sock.close()
     return json.loads(fastd_data.decode("utf-8"))
 
-def getNode_id(dev):
+def getMeshVPNPeers():
+    j = {}
+    if "fastd_socket" in config:
+        fastd = getFastd()
+        for peer, v in fastd["peers"].items():
+            if v["connection"]:
+                j[v["name"]] = {
+                    "established": v["connection"]["established"],
+                }
+            else:
+                j[v["name"]] = None
+
+        return j
+    else:
+        return None
+
+def getNode_ID():
     if 'node_id' in aliases["nodeinfo"]:
         return aliases["nodeinfo"]["node_id"]
     else:
-        return mac_mesh(dev).replace(':','')
+        return getDevice_MAC(config["wan"]).replace(':','')
+
+def getStationDump(dev):
+    try:
+        j = {}
+        # iw dev ibss3 station dump
+        output = subprocess.check_output(["iw","dev",dev,"station", "dump"])
+        output_utf8 = output.decode("utf-8")
+        lines = output_utf8.splitlines()
+
+        mac=""
+        for line in lines:
+            # Station 32:b8:c3:86:3e:e8 (on ibss3)
+            ml = re.match('^Station ([0-9a-f:]+) \(on ([\w\d]+)\)', line, re.I)
+            if ml:
+                mac = ml.group(1)
+                j[mac] = {}
+            else:
+                ml = re.match('^[\t ]+([^:]+):[\t ]+([^ ]+)', line, re.I)
+                if ml:
+                    j[mac][ml.group(1)] = ml.group(2)
+        return j
+    except:
+        return None
 
 def getNeighbours():
 # https://github.com/freifunk-gluon/packages/blob/master/net/respondd/src/respondd.c
-# wenn Originators.mac == next_hop.mac dann
-    j = {}
-    with open("/sys/kernel/debug/batman_adv/" + batadv_dev + "/originators", 'r') as fh:
+    j = { "batadv": {}}
+    stationDump = None
+    if 'mesh-wlan' in config:
+        j["wifi"] = {}
+        stationDump = getStationDump(config["mesh-wlan"])
+
+    mesh_ifs = getMesh_Interfaces()
+    with open("/sys/kernel/debug/batman_adv/" + config['batman'] + "/originators", 'r') as fh:
         for line in fh:
             #62:e7:27:cd:57:78 0.496s   (192) de:ad:be:ef:01:01 [  mesh-vpn]: de:ad:be:ef:01:01 (192) de:ad:be:ef:02:01 (148) de:ad:be:ef:03:01 (148)
             ml = re.match(r"^([0-9a-f:]+)[ ]*([\d\.]*)s[ ]*\((\d*)\)[ ]*([0-9a-f:]+)[ ]*\[[ ]*(.*)\]", line, re.I)
+
             if ml:
-                if ml.group(1) == ml.group(4):
-                    j[ml.group(1)] = {
-                        "tq": int(ml.group(3)),
-                        "lastseen": float(ml.group(2)),
+                dev = ml.group(5)
+                mac_origin = ml.group(1)
+                mac_nhop = ml.group(4)
+                tq = ml.group(3)
+                lastseen = ml.group(2)
+
+                if mac_origin == mac_nhop:
+                    if 'mesh-wlan' in config and dev == config["mesh-wlan"] and not stationDump is None:
+                        if not mesh_ifs[dev] in j["wifi"]:
+                            j["wifi"][mesh_ifs[dev]] = {}
+                            j["wifi"][mesh_ifs[dev]]["neighbours"] = {}
+
+                        if mac_origin in stationDump:
+                            j["wifi"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
+                                "signal": stationDump[mac_origin]["signal"],
+                                "noise": 0, # BUG: fehlt noch
+                                "inactive": stationDump[mac_origin]["inactive time"],
+                        }
+
+
+                    if not mesh_ifs[dev] in j["batadv"]:
+                        j["batadv"][mesh_ifs[dev]] = {}
+                        j["batadv"][mesh_ifs[dev]]["neighbours"] = {}
+
+                    j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
+                        "tq": int(tq),
+                        "lastseen": float(lastseen),
                     }
     return j
 
@@ -208,17 +280,17 @@ def getNeighbours():
 
 def createNodeinfo():
     j = {
-        "node_id": getNode_id(fastd_dev),
+        "node_id": getNode_ID(),
         "hostname": socket.gethostname(),
         "network": {
-            "addresses": getAddresses(bridge_dev),
+            "addresses": getDevice_Addresses(config['bridge']),
             "mesh": {
                 "bat0": {
-                    "interfaces": getBat0_mesh(batadv_dev),
+                    "interfaces": getBat0_Interfaces(),
                 },
             },
-            "mac": getMac_mesh(fastd_dev),
-            "mesh_interfaces": getMesh_interfaces(batadv_dev),
+            "mac": getDevice_MAC(config["wan"]),
+            "mesh_interfaces": list(getMesh_Interfaces().values()),
         },
         "software": {
             "firmware": {
@@ -252,47 +324,33 @@ def createNodeinfo():
     }
     return merge(j, aliases["nodeinfo"])
 
-
 def createStatistics():
     j = {
-        "node_id": getNode_id(fastd_dev),
-        "gateway" : getGateway(batadv_dev), # BUG: wenn man ein Gateway ist, was soll man dann hier senden?
-        "clients":  getClients(batadv_dev),
-        "traffic": getTraffic(batadv_dev),
+        "node_id": getNode_ID(),
+        "gateway" : getGateway(),
+        "clients":  getClients(),
+        "traffic": getTraffic(),
         "idletime": float(open('/proc/uptime').read().split(' ')[1]),
         "loadavg": float(open('/proc/loadavg').read().split(' ')[0]),
         "memory": getMemory(),
         "processes": dict(zip(('running', 'total'), map(int, open('/proc/loadavg').read().split(' ')[3].split('/')))),
         "uptime": float(open('/proc/uptime').read().split(' ')[0]),
-#        "mesh_vpn": { # getFastd
-#            "groups": {
-#                "backbone": {
-#                    "peers": {
-#                        "vpn1": None,
-#                        "vpn2": {
-#                            "established": 1000,
-#                        },
-#                        "vpn3": None,
-#                    },
-#                },
-#            },
-#        },
+        "mesh_vpn" : { # HopGlass-Server: node.flags.uplink = parsePeerGroup(_.get(n, 'statistics.mesh_vpn'))
+            "groups": {
+                "backbone": {
+                    "peers": getMeshVPNPeers(),
+                },
+            },
+        },
     }
     return j
 
-
 def createNeighbours():
 #/sys/kernel/debug/batman_adv/bat0/originators
-
     j = {
-        "node_id": getNode_id(fastd_dev),
-        "batadv": { # Testing
-            getMac_mesh(fastd_dev): {
-                "neighbours": getNeighbours(),
-            },
-            #"wifi": {},
-        },
+        "node_id": getNode_ID(),
     }
+    j = merge(j, getNeighbours())
     return j
 
 def sendResponse(request, compress):
@@ -319,10 +377,19 @@ def sendResponse(request, compress):
     else:
         sock.sendto(json_str, sender)
 
-    print(json.dumps(json_data, sort_keys=True, indent=4))
+    if options["verbose"]:
+        print(json.dumps(json_data, sort_keys=True, indent=4))
 
 # ===================== Mainfunction ======================
 # =========================================================
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument( '-d', '--debug', action='store_true', help='Debug Output',required=False,)
+parser.add_argument( '-v', '--verbose', action='store_true', help='Verbose Output',required=False)
+
+args = parser.parse_args()
+options = vars(args)
 
 config = {}
 try:
@@ -338,18 +405,13 @@ try:
 except IOError:
     raise
 
-
-batadv_dev = config['batman']
-fastd_dev  = config['fastd']
-bridge_dev = config['bridge']
-
-#print(json.dumps(getFastd(config["fastd_socket"]), sort_keys=True, indent=4))
-#print(json.dumps(createNodeinfo(), sort_keys=True, indent=4))
-#print(json.dumps(createStatistics(), sort_keys=True, indent=4))
-#print(json.dumps(createNeighbours(), sort_keys=True, indent=4))
-#print(merge(createNodeinfo(), aliases["nodeinfo"]))
-#print(createStatistics())
-#sys.exit(1)
+if options["debug"]:
+    print(json.dumps(createNodeinfo(), sort_keys=True, indent=4))
+    print(json.dumps(createStatistics(), sort_keys=True, indent=4))
+    print(json.dumps(createNeighbours(), sort_keys=True, indent=4))
+    #print(json.dumps(getFastd(config["fastd_socket"]), sort_keys=True, indent=4))
+    #print(json.dumps(getMesh_VPN(), sort_keys=True, indent=4))
+    sys.exit(1)
 
 
 if 'addr' in config:
@@ -373,16 +435,12 @@ sock.bind(('::', port))
 
 while True:
     if select.select([sock],[],[],1)[0]:
-        msg, sender = sock.recvfrom(2048) # buffer > mtu !?!? -> egal, da eh nur ein GET kommt welches kleiner ist als 1024 ist
-#        try:
-#            msg = zlib.decompress(msg, -15) # The data may be decompressed using zlib and many zlib bindings using -15 as the window size parameter.
-#        except zlib.error:
-#            pass
-        print(msg)
+        msg, sender = sock.recvfrom(2048)
+        if options["verbose"]:
+          print(msg)
 
         msg_spl = str(msg, 'UTF-8').split(" ")
 
-        # BUG: Es koennen auch Anfragen wie "GET statistics nodeinfo" existieren (laut gluon doku)
         if msg_spl[0] == 'GET': # multi_request
             for request in msg_spl[1:]:
                 sendResponse(request, True)
