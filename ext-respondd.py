@@ -21,7 +21,6 @@ import json
 import zlib
 
 import netifaces as netif
-from cpuinfo import cpuinfo
 
 def toUTF8(line):
     return line.decode("utf-8")
@@ -275,6 +274,16 @@ def getNeighbours():
                     }
     return j
 
+def getCPUInfo():
+    j = {}
+    with open("/proc/cpuinfo", 'r') as fh:
+        for line in fh:
+            ml = re.match(r"^(.+?)[\t ]+:[\t ]+(.*)$", line, re.I)
+
+            if ml:
+                j[ml.group(1)] = ml.group(2)
+    return j
+
 # ======================== Output =========================
 # =========================================================
 
@@ -314,7 +323,7 @@ def createNodeinfo():
             },
         },
         "hardware": {
-            "model": cpuinfo.get_cpu_info()["brand"],
+            "model": getCPUInfo()["model name"],
             "nproc": int(call(['nproc'])[0]),
         },
 #        "vpn": True,

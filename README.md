@@ -9,7 +9,6 @@ A gluon compatible status script for respondd in python.
  * ethtool
  * python3.3
  * python3-netifaces
- * py-cpuinfo
  * batman-adv
 
 ## Setup
