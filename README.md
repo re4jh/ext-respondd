@@ -19,9 +19,9 @@ Copy `config.json.example` to `config.json` and change it to match your server c
 (`cp config.json.example config.json`)
 
  * `batman` (string) (Needed: typical bat0)
- * `fastd` (string) (Needed: typical mesh-vpn)
  * `bridge` (string) (Needed: typical br-client)
- * `mesh-wlan` (string) (Optional: Ad-Hoc batman-Mesh)
+ * `mesh-wlan` (array of string) (Optional: Ad-Hoc batman-Mesh)
+ * `mesh-vpn` (array of string) (Optional: fastd, GRE, L2TP batman-Mesh)
  * `wan` (string) (Needed: for primary MAC-Address and node-id)
  * `fastd_socket` (string) (Optional: needed for uplink-flag)
 
