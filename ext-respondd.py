@@ -206,7 +206,7 @@ def getNode_ID():
     if 'node_id' in aliases["nodeinfo"]:
         return aliases["nodeinfo"]["node_id"]
     else:
-        return getDevice_MAC(config["wan"]).replace(':','')
+        return getDevice_MAC(config["batman"]).replace(':','')
 
 def getStationDump(dev_list):
     j = {}
@@ -301,7 +301,7 @@ def createNodeinfo():
                     "interfaces": getBat0_Interfaces(),
                 },
             },
-            "mac": getDevice_MAC(config["wan"]),
+            "mac": getDevice_MAC(config["batman"]),
             "mesh_interfaces": list(getMesh_Interfaces().values()),
         },
         "software": {
