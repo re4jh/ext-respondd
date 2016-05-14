@@ -208,28 +208,29 @@ def getNode_ID():
     else:
         return getDevice_MAC(config["wan"]).replace(':','')
 
-def getStationDump(dev):
-    try:
-        j = {}
-        # iw dev ibss3 station dump
-        output = subprocess.check_output(["iw","dev",dev,"station", "dump"])
-        output_utf8 = output.decode("utf-8")
-        lines = output_utf8.splitlines()
+def getStationDump(dev_list):
+    j = {}
+    for dev in dev_list:
+        try:
+            # iw dev ibss3 station dump
+            output = subprocess.check_output(["iw","dev",dev,"station", "dump"])
+            output_utf8 = output.decode("utf-8")
+            lines = output_utf8.splitlines()
 
-        mac=""
-        for line in lines:
-            # Station 32:b8:c3:86:3e:e8 (on ibss3)
-            ml = re.match('^Station ([0-9a-f:]+) \(on ([\w\d]+)\)', line, re.I)
-            if ml:
-                mac = ml.group(1)
-                j[mac] = {}
-            else:
-                ml = re.match('^[\t ]+([^:]+):[\t ]+([^ ]+)', line, re.I)
+            mac=""
+            for line in lines:
+                # Station 32:b8:c3:86:3e:e8 (on ibss3)
+                ml = re.match('^Station ([0-9a-f:]+) \(on ([\w\d]+)\)', line, re.I)
                 if ml:
-                    j[mac][ml.group(1)] = ml.group(2)
-        return j
-    except:
-        return None
+                    mac = ml.group(1)
+                    j[mac] = {}
+                else:
+                    ml = re.match('^[\t ]+([^:]+):[\t ]+([^ ]+)', line, re.I)
+                    if ml:
+                        j[mac][ml.group(1)] = ml.group(2)
+        except:
+            pass
+    return j
 
 def getNeighbours():
 # https://github.com/freifunk-gluon/packages/blob/master/net/respondd/src/respondd.c
@@ -243,7 +244,7 @@ def getNeighbours():
     with open("/sys/kernel/debug/batman_adv/" + config['batman'] + "/originators", 'r') as fh:
         for line in fh:
             #62:e7:27:cd:57:78 0.496s   (192) de:ad:be:ef:01:01 [  mesh-vpn]: de:ad:be:ef:01:01 (192) de:ad:be:ef:02:01 (148) de:ad:be:ef:03:01 (148)
-            ml = re.match(r"^([0-9a-f:]+)[ ]*([\d\.]*)s[ ]*\((\d*)\)[ ]*([0-9a-f:]+)[ ]*\[[ ]*(.*)\]", line, re.I)
+            ml = re.match(r"^([0-9a-f:]+)[ ]*([\d\.]*)s[ ]*\(([ ]*\d*)\)[ ]*([0-9a-f:]+)[ ]*\[[ ]*(.*)\]", line, re.I)
 
             if ml:
                 dev = ml.group(5)
@@ -253,7 +254,7 @@ def getNeighbours():
                 lastseen = ml.group(2)
 
                 if mac_origin == mac_nhop:
-                    if 'mesh-wlan' in config and dev == config["mesh-wlan"] and not stationDump is None:
+                    if 'mesh-wlan' in config and dev in config["mesh-wlan"] and not stationDump is None:
                         if not mesh_ifs[dev] in j["wifi"]:
                             j["wifi"][mesh_ifs[dev]] = {}
                             j["wifi"][mesh_ifs[dev]]["neighbours"] = {}
