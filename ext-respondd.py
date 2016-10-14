@@ -130,7 +130,7 @@ def getBat0_Interfaces():
         if_group = ""
         if "fastd" in config and nif == config["fastd"]: # keep for compatibility
             if_group = "tunnel"
-        elif "mesh-vpn" in config and nif in config["mesh-vpn"]:
+        elif ("mesh-vpn" in config and nif in config["mesh-vpn"]) or nif.startswith("l2tp"):
             if_group = "tunnel"
         elif "mesh-wlan" in config and nif in config["mesh-wlan"]:
             if_group = "wireless"
