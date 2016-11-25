@@ -1,7 +1,8 @@
 {
-    "batman": "bat0",
-    "bridge": "br-client",
-    "mesh-vpn": [ "mesh-vpn" ],
-    "mesh-wlan": [ "ibss0", "mesh0" ],
-    "fastd_socket": "/var/run/fastd.mesh_vpn.socket"
+  "batman": "bat0",
+  "bridge": "br-client",
+  "mesh-vpn": [ "mesh-vpn" ],
+  "mesh-wlan": [ "ibss0", "mesh0" ],
+  "fastd_socket": "/var/run/fastd.mesh_vpn.socket"
 }
+
