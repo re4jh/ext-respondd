@@ -339,7 +339,6 @@ def createNodeinfo():
 def createStatistics():
     j = {
         "node_id": getNode_ID(),
-        "gateway" : getGateway(),
         "clients":  getClients(),
         "traffic": getTraffic(),
         "idletime": float(open('/proc/uptime').read().split(' ')[1]),
@@ -355,6 +354,11 @@ def createStatistics():
             },
         },
     }
+
+    gateway = getGateway()
+    if gateway != None:
+        j["gateway"] = gateway
+    
     return j
 
 def createNeighbours():
