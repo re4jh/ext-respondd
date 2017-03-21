@@ -243,40 +243,44 @@ def getNeighbours():
         stationDump = getStationDump(config["mesh-wlan"])
 
     mesh_ifs = getMesh_Interfaces()
-    with open("/sys/kernel/debug/batman_adv/" + config['batman'] + "/originators", 'r') as fh:
-        for line in fh:
-            #62:e7:27:cd:57:78 0.496s   (192) de:ad:be:ef:01:01 [  mesh-vpn]: de:ad:be:ef:01:01 (192) de:ad:be:ef:02:01 (148) de:ad:be:ef:03:01 (148)
-            ml = re.match(r"^([0-9a-f:]+)[ ]*([\d\.]*)s[ ]*\(([ ]*\d*)\)[ ]*([0-9a-f:]+)[ ]*\[[ ]*(.*)\]", line, re.I)
 
-            if ml:
-                dev = ml.group(5)
-                mac_origin = ml.group(1)
-                mac_nhop = ml.group(4)
-                tq = ml.group(3)
-                lastseen = ml.group(2)
+    output = subprocess.check_output(["batctl","-m",config['batman'],"o","-n"])
+    output_utf8 = output.decode("utf-8")
+    lines = output_utf8.splitlines()
+    
+    for line in lines:
+        # * e2:ad:db:b7:66:63    2.712s   (175) be:b7:25:4f:8f:96 [mesh-vpn-l2tp-1]
+        ml = re.match(r"^[ \*\t]*([0-9a-f:]+)[ ]*([\d\.]*)s[ ]*\(([ ]*\d*)\)[ ]*([0-9a-f:]+)[ ]*\[[ ]*(.*)\]", line, re.I)
 
-                if mac_origin == mac_nhop:
-                    if 'mesh-wlan' in config and dev in config["mesh-wlan"] and not stationDump is None:
-                        if not mesh_ifs[dev] in j["wifi"]:
-                            j["wifi"][mesh_ifs[dev]] = {}
-                            j["wifi"][mesh_ifs[dev]]["neighbours"] = {}
+        if ml:
+            dev = ml.group(5)
+            mac_origin = ml.group(1)
+            mac_nhop = ml.group(4)
+            tq = ml.group(3)
+            lastseen = ml.group(2)
 
-                        if mac_origin in stationDump:
-                            j["wifi"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
-                                "signal": stationDump[mac_origin]["signal"],
-                                "noise": 0, # BUG: fehlt noch
-                                "inactive": stationDump[mac_origin]["inactive time"],
-                        }
+            if mac_origin == mac_nhop:
+                if 'mesh-wlan' in config and dev in config["mesh-wlan"] and not stationDump is None:
+                    if not mesh_ifs[dev] in j["wifi"]:
+                        j["wifi"][mesh_ifs[dev]] = {}
+                        j["wifi"][mesh_ifs[dev]]["neighbours"] = {}
 
-                    if dev in mesh_ifs:
-                        if not mesh_ifs[dev] in j["batadv"]:
-                            j["batadv"][mesh_ifs[dev]] = {}
-                            j["batadv"][mesh_ifs[dev]]["neighbours"] = {}
+                    if mac_origin in stationDump:
+                        j["wifi"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
+                            "signal": stationDump[mac_origin]["signal"],
+                            "noise": 0, # BUG: fehlt noch
+                            "inactive": stationDump[mac_origin]["inactive time"],
+                    }
 
-                        j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
-                            "tq": int(tq),
-                            "lastseen": float(lastseen),
-                        }
+                if dev in mesh_ifs:
+                    if not mesh_ifs[dev] in j["batadv"]:
+                        j["batadv"][mesh_ifs[dev]] = {}
+                        j["batadv"][mesh_ifs[dev]]["neighbours"] = {}
+
+                    j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
+                        "tq": int(tq),
+                        "lastseen": float(lastseen),
+                    }
     return j
 
 def getCPUInfo():
