@@ -315,10 +315,6 @@ def createNodeinfo():
                 "version": open('/sys/module/batman_adv/version').read().strip(),
 #                "compat": # /lib/gluon/mesh-batman-adv-core/compat
             },
-            "fastd": {
-                "version": call(['fastd','-v'])[0].split(' ')[1],
-                "enabled": True,
-            },
             "status-page": {
                 "api": 0,
             },
@@ -336,6 +332,15 @@ def createNodeinfo():
         "system": {},
         "location": {},
     }
+
+    try:
+      j["software"]["fastd"] = {
+          "version": call(['fastd','-v'])[0].split(' ')[1],
+          "enabled": True,
+      };
+    except:
+        pass
+
     return merge(j, aliases["nodeinfo"])
 
 def createStatistics():
