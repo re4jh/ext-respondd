@@ -65,6 +65,7 @@ Collecting data from respondd:
 * [HopGlass Server](https://github.com/hopglass/hopglass-server) written in Node.js
 
 Respondd for servers:
+* [ffho-respondd](https://github.com/FreifunkHochstift/ffho-respondd) from Freifunk Hochstift (fork from ext-respondd)
 * [respondd branch of ffnord-alfred-announce](https://github.com/ffnord/ffnord-alfred-announce/tree/respondd) from FreiFunkNord
 * [respondd](https://github.com/FreifunkBremen/respondd) from Freifunk Bremen (just a proof of concept)
 
