@@ -268,15 +268,15 @@ def getNeighbours():
                                 "inactive": stationDump[mac_origin]["inactive time"],
                         }
 
+                    if dev in mesh_ifs:
+                        if not mesh_ifs[dev] in j["batadv"]:
+                            j["batadv"][mesh_ifs[dev]] = {}
+                            j["batadv"][mesh_ifs[dev]]["neighbours"] = {}
 
-                    if not mesh_ifs[dev] in j["batadv"]:
-                        j["batadv"][mesh_ifs[dev]] = {}
-                        j["batadv"][mesh_ifs[dev]]["neighbours"] = {}
-
-                    j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
-                        "tq": int(tq),
-                        "lastseen": float(lastseen),
-                    }
+                        j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
+                            "tq": int(tq),
+                            "lastseen": float(lastseen),
+                        }
     return j
 
 def getCPUInfo():
