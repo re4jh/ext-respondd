@@ -78,9 +78,10 @@ def getClients():
         ml = re.match(r"^\s\*\s([0-9a-f:]+)\s+-\d\s\[([RPNXWI\.]+)\]", line, re.I)
         if ml:
             if not batadv_mac == ml.group(1): # Filter bat0
-                j["total"] += 1
-                if ml.group(2)[4] == 'W':
-                    j["wifi"] += 1
+                if not ml.group(1).startswith('33:33:') and not ml.group(1).startswith('01:00:5e:'): # Filter Multicast
+                    j["total"] += 1
+                    if ml.group(2)[4] == 'W':
+                        j["wifi"] += 1
 
     return j
 
