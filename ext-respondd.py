@@ -338,13 +338,14 @@ def createNodeinfo():
         "location": {},
     }
 
-    try:
-      j["software"]["fastd"] = {
-          "version": call(['fastd','-v'])[0].split(' ')[1],
-          "enabled": True,
-      };
-    except:
-        pass
+    if 'mesh-vpn' in config and len(config["mesh-vpn"]) > 0:
+        try:
+          j["software"]["fastd"] = {
+              "version": call(['fastd','-v'])[0].split(' ')[1],
+              "enabled": True,
+          };
+        except:
+            pass
 
     return merge(j, aliases["nodeinfo"])
 
