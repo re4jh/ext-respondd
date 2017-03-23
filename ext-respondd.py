@@ -92,6 +92,10 @@ def getDevice_Addresses(dev):
         for ip6 in netif.ifaddresses(dev)[netif.AF_INET6]:
             raw6 = ip6['addr'].split('%')
             l.append(raw6[0])
+
+        for ip in netif.ifaddresses(dev)[netif.AF_INET]:
+            raw = ip['addr'].split('%')
+            l.append(raw[0])
     except:
         pass
 
