@@ -220,7 +220,7 @@ def getStationDump(dev_list):
     for dev in dev_list:
         try:
             # iw dev ibss3 station dump
-            output = subprocess.check_output(["iw","dev",dev,"station", "dump"], stderr=STDOUT)
+            output = subprocess.check_output(["iw","dev",dev,"station", "dump"])
             output_utf8 = output.decode("utf-8")
             lines = output_utf8.splitlines()
 
