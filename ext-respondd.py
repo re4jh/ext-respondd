@@ -47,14 +47,16 @@ def getGateway():
     output = subprocess.check_output(["batctl","-m",config['batman'],"gwl","-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
-    gw = None
+    j = None
 
     for line in lines:
-        gw_line = re.match(r"^=> +([0-9a-f:]+) ", line)
+        gw_line = re.match(r"^(\*|=>) +([0-9a-f:]+) \([\d ]+\) ([0-9a-f:]+)", line)
         if gw_line:
-            gw = gw_line.group(1)
+            j = {}
+            j["gateway"] = gw_line.group(2)
+            j["gateway_nexthop"] = gw_line.group(3)
 
-    return gw
+    return j
 
 def getClients():
 #/sys/kernel/debug/batman_adv/bat0/transtable_local
@@ -374,7 +376,7 @@ def createStatistics():
 
     gateway = getGateway()
     if gateway != None:
-        j["gateway"] = gateway
+        j = merge(j, gateway)
     
     return j
 
