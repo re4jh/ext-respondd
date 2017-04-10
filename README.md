@@ -1,7 +1,7 @@
-respondd Status for Servers
----------------------------------
+# respondd Status for Servers
 
-A gluon compatible status script for respondd in python.
+> A gluon compatible status script for respondd in python.
+
 
 ## Dependencies
 
@@ -10,6 +10,7 @@ A gluon compatible status script for respondd in python.
  * python3.3
  * python3-netifaces
  * batman-adv
+
 
 ## Setup
 
@@ -24,14 +25,12 @@ Copy `config.json.example` to `config.json` and change it to match your server c
  * `mesh-vpn` (array of string) (Optional: fastd, GRE, L2TP batman-Mesh)
  * `fastd_socket` (string) (Optional: needed for uplink-flag)
 
-
 ### alias.json
 Aliases to overwrite the returned server data.  
 Copy `alias.json.example` to `alias.json` and input e.g. owner information.  
 (`cp alias.json.example alias.json`)
 
-The JSON content matches one block of the nodes.json, which is outputted by e.g. the [HopGlass-Server](https://github.com/plumpudding/hopglass-server).
-
+The JSON content matches one block of the nodes.json, which is outputted by e.g. the [HopGlass-Server](https://github.com/hopglass/hopglass-server).
 
 ### ext-respondd.service
 Register ext-respondd as a systemd service
@@ -43,8 +42,9 @@ systemctl enable ext-respondd
 systemctl start ext-respondd
 ```
 
+
 ## Notes
-Add this to your aliases.json in your [HopGlass-Server](https://github.com/plumpudding/hopglass-server) if this a gateway.
+Add this to your aliases.json in your [HopGlass-Server](https://github.com/hopglass/hopglass-server) if this a gateway.
 
 ```
   "gw2": {
@@ -58,6 +58,7 @@ Add this to your aliases.json in your [HopGlass-Server](https://github.com/plump
   }
 ```
 
+
 ## Related projects
 
 Collecting data from respondd:
@@ -65,7 +66,6 @@ Collecting data from respondd:
 * [HopGlass Server](https://github.com/hopglass/hopglass-server) written in Node.js
 
 Respondd for servers:
-* [ffho-respondd](https://github.com/FreifunkHochstift/ffho-respondd) from Freifunk Hochstift (fork from ext-respondd)
-* [respondd branch of ffnord-alfred-announce](https://github.com/ffnord/ffnord-alfred-announce/tree/respondd) from FreiFunkNord
-* [respondd](https://github.com/FreifunkBremen/respondd) from Freifunk Bremen (just a proof of concept)
-
+* [ffho-respondd](https://github.com/FreifunkHochstift/ffho-respondd) from Freifunk Hochstift (fork of ext-respondd)
+* [ffnord-alfred-announce](https://github.com/ffnord/ffnord-alfred-announce) from FreiFunkNord
+* [py-respondd](https://github.com/descilla/py-respondd)
