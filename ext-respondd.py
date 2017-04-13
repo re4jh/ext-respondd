@@ -452,7 +452,7 @@ if options["debug"]:
 if 'addr' in config:
     addr = config['addr']
 else:
-    addr = 'ff02::2'
+    addr = 'ff02::2:1001'
 
 if 'addr' in config:
     port = config['port']
