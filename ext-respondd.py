@@ -16,7 +16,6 @@ import re
 import locale                                         # Ensures that subsequent open()s
 locale.getpreferredencoding = lambda _=None: 'UTF-8'  # are UTF-8 encoded.
 
-
 import json
 import zlib
 
@@ -44,7 +43,7 @@ def merge(a, b):
 
 def getGateway():
 #/sys/kernel/debug/batman_adv/bat0/gateways
-    output = subprocess.check_output(["batctl","-m",config['batman'],"gwl","-n"])
+    output = subprocess.check_output(["batctl", "-m", config['batman'], "gwl", "-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
     j = None
@@ -60,7 +59,7 @@ def getGateway():
 
 def getClients():
 #/sys/kernel/debug/batman_adv/bat0/transtable_local
-    output = subprocess.check_output(["batctl","-m",config['batman'],"tl","-n"])
+    output = subprocess.check_output(["batctl", "-m", config['batman'], "tl", "-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
     batadv_mac = getDevice_MAC(config['batman'])
@@ -113,7 +112,7 @@ def getDevice_MAC(dev):
 
 def getMesh_Interfaces():
     j = {}
-    output = subprocess.check_output(["batctl","-m",config['batman'],"if"])
+    output = subprocess.check_output(["batctl", "-m", config['batman'], "if"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
 
@@ -126,7 +125,7 @@ def getMesh_Interfaces():
 
 def getBat0_Interfaces():
     j = {}
-    output = subprocess.check_output(["batctl","-m",config['batman'],"if"])
+    output = subprocess.check_output(["batctl", "-m", config['batman'], "if"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
 
@@ -139,7 +138,7 @@ def getBat0_Interfaces():
             if_group = "tunnel"
         elif nif.find("l2tp") != -1:
             if_group = "l2tp"
-        elif ("mesh-vpn" in config and nif in config["mesh-vpn"]):
+        elif "mesh-vpn" in config and nif in config["mesh-vpn"]:
             if_group = "tunnel"
         elif "mesh-wlan" in config and nif in config["mesh-wlan"]:
             if_group = "wireless"
@@ -153,16 +152,14 @@ def getBat0_Interfaces():
 
     return j
 
-def getTraffic(): # BUG: falsches interfaces?
-    return (lambda fields:
-        dict(
-            (key, dict(
-                (type_, int(value_))
-                for key_, type_, value_ in fields
-                    if key_ == key))
-            for key in ['rx', 'tx', 'forward', 'mgmt_rx', 'mgmt_tx']
-        )
-    )(list(
+def getTraffic():
+    return (lambda fields: dict(
+        (key, dict(
+            (type_, int(value_))
+            for key_, type_, value_ in fields
+            if key_ == key))
+        for key in ['rx', 'tx', 'forward', 'mgmt_rx', 'mgmt_tx']
+    ))(list(
         (
             key.replace('_bytes', '').replace('_dropped', ''),
             'bytes' if key.endswith('_bytes') else 'dropped' if key.endswith('_dropped') else 'packets',
@@ -189,8 +186,9 @@ def getFastd():
 
     while True:
         data = sock.recv(1024)
-        if not data: break
-        fastd_data+= data
+        if not data:
+            break
+        fastd_data += data
 
     sock.close()
     return json.loads(fastd_data.decode("utf-8"))
@@ -199,13 +197,13 @@ def getMeshVPNPeers():
     j = {}
     if "fastd_socket" in config:
         fastd = getFastd()
-        for peer, v in fastd["peers"].items():
-            if v["connection"]:
-                j[v["name"]] = {
-                    "established": v["connection"]["established"],
+        for peer in fastd["peers"].values():
+            if peer["connection"]:
+                j[peer["name"]] = {
+                    "established": peer["connection"]["established"]
                 }
             else:
-                j[v["name"]] = None
+                j[peer["name"]] = None
 
         return j
     else:
@@ -215,26 +213,26 @@ def getNode_ID():
     if 'node_id' in aliases["nodeinfo"]:
         return aliases["nodeinfo"]["node_id"]
     else:
-        return getDevice_MAC(config["batman"]).replace(':','')
+        return getDevice_MAC(config["batman"]).replace(':', '')
 
 def getStationDump(dev_list):
     j = {}
     for dev in dev_list:
         try:
             # iw dev ibss3 station dump
-            output = subprocess.check_output(["iw","dev",dev,"station", "dump"])
+            output = subprocess.check_output(["iw", "dev", dev, "station", "dump"])
             output_utf8 = output.decode("utf-8")
             lines = output_utf8.splitlines()
 
-            mac=""
+            mac = ""
             for line in lines:
                 # Station 32:b8:c3:86:3e:e8 (on ibss3)
-                ml = re.match('^Station ([0-9a-f:]+) \(on ([\w\d]+)\)', line, re.I)
+                ml = re.match(r"^Station ([0-9a-f:]+) \(on ([\w\d]+)\)", line, re.I)
                 if ml:
                     mac = ml.group(1)
                     j[mac] = {}
                 else:
-                    ml = re.match('^[\t ]+([^:]+):[\t ]+([^ ]+)', line, re.I)
+                    ml = re.match(r"^[\t ]+([^:]+):[\t ]+([^ ]+)", line, re.I)
                     if ml:
                         j[mac][ml.group(1)] = ml.group(2)
         except:
@@ -243,7 +241,7 @@ def getStationDump(dev_list):
 
 def getNeighbours():
 # https://github.com/freifunk-gluon/packages/blob/master/net/respondd/src/respondd.c
-    j = { "batadv": {}}
+    j = {"batadv": {}}
     stationDump = None
     if 'mesh-wlan' in config:
         j["wifi"] = {}
@@ -251,10 +249,10 @@ def getNeighbours():
 
     mesh_ifs = getMesh_Interfaces()
 
-    output = subprocess.check_output(["batctl","-m",config['batman'],"o","-n"])
+    output = subprocess.check_output(["batctl", "-m", config['batman'], "o", "-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
-    
+
     for line in lines:
         # * e2:ad:db:b7:66:63    2.712s   (175) be:b7:25:4f:8f:96 [mesh-vpn-l2tp-1]
         ml = re.match(r"^[ \*\t]*([0-9a-f:]+)[ ]*([\d\.]*)s[ ]*\(([ ]*\d*)\)[ ]*([0-9a-f:]+)[ ]*\[[ ]*(.*)\]", line, re.I)
@@ -275,9 +273,9 @@ def getNeighbours():
                     if mac_origin in stationDump:
                         j["wifi"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
                             "signal": stationDump[mac_origin]["signal"],
-                            "noise": 0, # BUG: fehlt noch
-                            "inactive": stationDump[mac_origin]["inactive time"],
-                    }
+                            "noise": 0, # TODO: fehlt noch
+                            "inactive": stationDump[mac_origin]["inactive time"]
+                        }
 
                 if dev in mesh_ifs:
                     if not mesh_ifs[dev] in j["batadv"]:
@@ -286,7 +284,7 @@ def getNeighbours():
 
                     j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
                         "tq": int(tq),
-                        "lastseen": float(lastseen),
+                        "lastseen": float(lastseen)
                     }
     return j
 
@@ -311,45 +309,44 @@ def createNodeinfo():
             "addresses": getDevice_Addresses(config['bridge']),
             "mesh": {
                 "bat0": {
-                    "interfaces": getBat0_Interfaces(),
-                },
+                    "interfaces": getBat0_Interfaces()
+                }
             },
             "mac": getDevice_MAC(config["batman"]),
-            "mesh_interfaces": list(getMesh_Interfaces().values()),
+            "mesh_interfaces": list(getMesh_Interfaces().values())
         },
         "software": {
             "firmware": {
-                "base": call(['lsb_release','-is'])[0],
-                "release": call(['lsb_release','-ds'])[0],
+                "base": call(['lsb_release', '-is'])[0],
+                "release": call(['lsb_release', '-ds'])[0]
             },
             "batman-adv": {
                 "version": open('/sys/module/batman_adv/version').read().strip(),
 #                "compat": # /lib/gluon/mesh-batman-adv-core/compat
             },
             "status-page": {
-                "api": 0,
+                "api": 0
             },
             "autoupdater": {
-#                "branch": "stable",
-                "enabled": False,
-            },
+                "enabled": False
+            }
         },
         "hardware": {
             "model": getCPUInfo()["model name"],
-            "nproc": int(call(['nproc'])[0]),
+            "nproc": int(call(['nproc'])[0])
         },
 #        "vpn": True,
         "owner": {},
         "system": {},
-        "location": {},
+        "location": {}
     }
 
     if 'mesh-vpn' in config and len(config["mesh-vpn"]) > 0:
         try:
-          j["software"]["fastd"] = {
-              "version": call(['fastd','-v'])[0].split(' ')[1],
-              "enabled": True,
-          };
+            j["software"]["fastd"] = {
+                "version": call(['fastd', '-v'])[0].split(' ')[1],
+                "enabled": True
+            }
         except:
             pass
 
@@ -368,22 +365,22 @@ def createStatistics():
         "mesh_vpn" : { # HopGlass-Server: node.flags.uplink = parsePeerGroup(_.get(n, 'statistics.mesh_vpn'))
             "groups": {
                 "backbone": {
-                    "peers": getMeshVPNPeers(),
-                },
-            },
-        },
+                    "peers": getMeshVPNPeers()
+                }
+            }
+        }
     }
 
     gateway = getGateway()
     if gateway != None:
         j = merge(j, gateway)
-    
+
     return j
 
 def createNeighbours():
 #/sys/kernel/debug/batman_adv/bat0/originators
     j = {
-        "node_id": getNode_ID(),
+        "node_id": getNode_ID()
     }
     j = merge(j, getNeighbours())
     return j
@@ -420,8 +417,8 @@ def sendResponse(request, compress):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument( '-d', '--debug', action='store_true', help='Debug Output',required=False,)
-parser.add_argument( '-v', '--verbose', action='store_true', help='Verbose Output',required=False)
+parser.add_argument('-d', '--debug', action='store_true', help='Debug Output', required=False)
+parser.add_argument('-v', '--verbose', action='store_true', help='Verbose Output', required=False)
 
 args = parser.parse_args()
 options = vars(args)
@@ -469,16 +466,15 @@ sock.bind(('::', port))
 # =========================================================
 
 while True:
-    if select.select([sock],[],[],1)[0]:
+    if select.select([sock], [], [], 1)[0]:
         msg, sender = sock.recvfrom(2048)
         if options["verbose"]:
-          print(msg)
+            print(msg)
 
         msg_spl = str(msg, 'UTF-8').split(" ")
 
         if msg_spl[0] == 'GET': # multi_request
-            for request in msg_spl[1:]:
-                sendResponse(request, True)
+            for req in msg_spl[1:]:
+                sendResponse(req, True)
         else: # single_request
             sendResponse(msg_spl[0], False)
-
