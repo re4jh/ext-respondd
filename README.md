@@ -62,11 +62,10 @@ Add this to your aliases.json in your [HopGlass-Server](https://github.com/hopgl
 ## Related projects
 
 Collecting data from respondd:
-* [respond-collector](https://github.com/FreifunkBremen/respond-collector) written in Go
+* [yanic](https://github.com/FreifunkBremen/yanic) written in Go
 * [HopGlass Server](https://github.com/hopglass/hopglass-server) written in Node.js
 
 Respondd for servers:
 * [ffho-respondd](https://github.com/FreifunkHochstift/ffho-respondd) from Freifunk Hochstift (fork of ext-respondd)
 * [ffnord-alfred-announce](https://github.com/ffnord/ffnord-alfred-announce) from FreiFunkNord
-* [yanic](https://github.com/FreifunkBremen/yanic) from Freifunk Bremen
 * [py-respondd](https://github.com/descilla/py-respondd)
