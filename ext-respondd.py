@@ -312,8 +312,7 @@ def createNodeinfo():
                     "interfaces": getBat0_Interfaces()
                 }
             },
-            "mac": getDevice_MAC(config["batman"]),
-            "mesh_interfaces": list(getMesh_Interfaces().values())
+            "mac": getDevice_MAC(config["batman"])
         },
         "software": {
             "firmware": {
