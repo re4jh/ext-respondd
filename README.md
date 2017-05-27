@@ -14,6 +14,11 @@
 
 ## Setup
 
+### Debian-Dependencies
+```
+apt-get install python3-netifaces ethtool lsb-release
+```
+
 ### config.json
 Startparameter for ext-respondd.  
 Copy `config.json.example` to `config.json` and change it to match your server configuration.  
