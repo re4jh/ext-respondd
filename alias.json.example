@@ -16,6 +16,7 @@
       "latitude": 89.10727755551,
       "longitude": 5.00932562351
     },
+    "vpn": true,
     "pages": [
       "http://start.ffggrz/",
       "http://start.ffggrz.de/"
