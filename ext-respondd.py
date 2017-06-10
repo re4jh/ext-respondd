@@ -150,6 +150,12 @@ def getBat0_Interfaces():
 
         j[if_group].append(getDevice_MAC(nif))
 
+    if "l2tp" in j:
+        if "tunnel" in j:
+            j["tunnel"] = j["tunnel"] + j["l2tp"]
+        else:
+            j["tunnel"] = j["l2tp"]
+
     return j
 
 def getTraffic():
