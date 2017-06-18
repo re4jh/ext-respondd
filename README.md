@@ -29,6 +29,8 @@ Copy `config.json.example` to `config.json` and change it to match your server c
  * `mesh-wlan` (array of string) (Optional: Ad-Hoc batman-Mesh)
  * `mesh-vpn` (array of string) (Optional: fastd, GRE, L2TP batman-Mesh)
  * `fastd_socket` (string) (Optional: needed for uplink-flag)
+ * `rate_limit` (integer) (Optional: limit incoming requests per minutes)
+ * `rate_limit_burst` (integer) (Optional: allow burst requests)
 
 ### alias.json
 Aliases to overwrite the returned server data.  

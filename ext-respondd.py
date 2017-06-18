@@ -11,6 +11,7 @@ import struct
 import subprocess
 import argparse
 import re
+import time
 
 # Force encoding to UTF-8
 import locale                                         # Ensures that subsequent open()s
@@ -40,6 +41,34 @@ def merge(a, b):
         return [merge(x, y) for x, y in itertools.izip_longest(a, b)]
 
     return a if b is None else b
+
+class rateLimit: # rate limit like iptables limit (per minutes)
+  tLast = None
+
+  def __init__(self, _rate_limit, _rate_burst):
+    self.rate_limit = _rate_limit
+    self.rate_burst = _rate_burst
+    self.bucket = _rate_burst
+
+  def limit(self):
+    tNow = time.time()
+
+    if self.tLast is None:
+      self.tLast = tNow
+      return True
+
+    tDiff = tNow - self.tLast
+    self.tLast = tNow
+
+    self.bucket+= (tDiff / (60 / self.rate_limit))
+    if self.bucket > self.rate_burst:
+      self.bucket = self.rate_burst
+
+    if self.bucket >= 1:
+      self.bucket-= 1
+      return True
+    else:
+      return False
 
 def getGateway():
 #/sys/kernel/debug/batman_adv/bat0/gateways
@@ -393,6 +422,10 @@ def createNeighbours():
 def sendResponse(request, compress):
     json_data = {}
 
+    if not RateLimit is None and not RateLimit.limit():
+        print("rate limit reached!")
+        return
+
 #https://github.com/freifunk-gluon/packages/blob/master/net/respondd/src/respondd.c
     if request == 'statistics':
         json_data[request] = createStatistics()
@@ -467,6 +500,13 @@ group = socket.inet_pton(socket.AF_INET6, addr) + struct.pack("I", if_idx)
 sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
 sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, group)
 sock.bind(('::', port))
+
+if 'rate_limit' in config:
+  if not 'rate_limit_burst' in config:
+    config['rate_limit_burst'] = 10
+  RateLimit = rateLimit(config['rate_limit'], config['rate_limit_burst'])
+else:
+  RateLimit = None
 
 # =========================================================
 
