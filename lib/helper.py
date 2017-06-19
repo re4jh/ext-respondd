@@ -24,9 +24,9 @@ def merge(a, b):
   return a if b is None else b
 
 def getDevice_MAC(dev):
-    try:
-        interface = netif.ifaddresses(dev)
-        mac = interface[netif.AF_LINK]
-        return mac[0]['addr']
-    except:
-        return None
+  try:
+    interface = netif.ifaddresses(dev)
+    mac = interface[netif.AF_LINK]
+    return mac[0]['addr']
+  except:
+    return None

@@ -68,7 +68,6 @@ class ResponddClient:
       response = self._nodeinfo
     elif request == 'neighbours':
       response = self._neighbours
-      pass
     else:
       print("unknown command: " + request)
       return
