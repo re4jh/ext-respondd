@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('-d', '--test', action='store_true', help='Test Output', required=False)
 parser.add_argument('-v', '--verbose', action='store_true', help='Verbose Output', required=False)
+parser.add_argument('-t', '--dry-run', action='store_true', help='Dry Run', required=False)
 
 args = parser.parse_args()
 options = vars(args)
@@ -31,8 +32,8 @@ if options["test"]:
   print(json.dumps(Neighbours(config).getStruct(), sort_keys=True, indent=4))
   sys.exit(1)
 
-if options["vebose"]:
-  config["verbose"] = True
+config["verbose"] = options["verbose"]
+config["dry_run"] = options["dry_run"]
 
 extResponddClient = ResponddClient(config)
 extResponddClient.start()

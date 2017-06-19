@@ -8,6 +8,7 @@ from lib.statistics import Statistics
 import socket
 import select
 import struct
+import json
 
 class ResponddClient:
   def __init__(self, config):
@@ -72,11 +73,13 @@ class ResponddClient:
       print("unknown command: " + request)
       return
 
-    if compress:
-      sock.sendto(response.getJSONCompressed(request), sender)
-    else:
-      sock.sendto(response.getJSON(request), sender)
+    if not self._config["dry_run"]:
+      if compress:
+        sock.sendto(response.getJSONCompressed(request), sender)
+      else:
+        sock.sendto(response.getJSON(request), sender)
 
-    if self._config["verbose"]:
-        print(json.dumps(response.getStruct(), sort_keys=True, indent=4))
+    if self._config["verbose"] or self._config["dry_run"]:
+      print("%35s %5d %13s: " % (sender[0], sender[1], request), end='')
+      print(json.dumps(response.getStruct(), sort_keys=True, indent=4))
 
