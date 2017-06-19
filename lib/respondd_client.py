@@ -77,6 +77,6 @@ class ResponddClient:
     else:
       sock.sendto(response.getJSON(request), sender)
 
-#      if options["verbose"]:
-#          print(json.dumps(json_data, sort_keys=True, indent=4))
+    if self._config["verbose"]:
+        print(json.dumps(response.getStruct(), sort_keys=True, indent=4))
 
