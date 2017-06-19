@@ -73,7 +73,7 @@ class Nodeinfo(Respondd):
           j[ml.group(1)] = ml.group(2)
     return j
 
-  def get(self):
+  def _get(self):
     j = {
       "hostname": socket.gethostname(),
       "network": {

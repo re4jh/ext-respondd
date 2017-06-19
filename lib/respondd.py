@@ -22,15 +22,17 @@ class Respondd:
     else:
       return lib.helper.getDevice_MAC(self._config["batman"]).replace(':', '')
 
-  def getJSON(self, root=None):
-    print(root)
-    j = self.get()
+  def getStruct(self, root=None):
+    j = self._get()
     j['node_id'] = self.getNode_ID()
     if not root is None:
       j_tmp = j
       j = {}
       j[root] = j_tmp
-    return bytes(json.dumps(j, separators=(',', ':')), 'UTF-8')
+    return j
+
+  def getJSON(self, root=None):
+    return bytes(json.dumps(self.getStruct(), separators=(',', ':')), 'UTF-8')
 
   def getJSONCompressed(self, root=None):
     return self.compress(self.getJSON(root))
@@ -41,6 +43,6 @@ class Respondd:
     gzip_data = gzip_data + encoder.flush()
     return gzip_data
 
-  def get(self):
+  def _get(self):
     return {}
   pass

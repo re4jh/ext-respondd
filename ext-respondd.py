@@ -26,9 +26,9 @@ if options["test"]:
   from lib.nodeinfo import Nodeinfo
   from lib.statistics import Statistics
   from lib.neighbours import Neighbours
-  print(json.dumps(Nodeinfo(config).get(), sort_keys=True, indent=4))
-  print(json.dumps(Statistics(config).get(), sort_keys=True, indent=4))
-  print(json.dumps(Neighbours(config).get(), sort_keys=True, indent=4))
+  print(json.dumps(Nodeinfo(config).getStruct(), sort_keys=True, indent=4))
+  print(json.dumps(Statistics(config).getStruct(), sort_keys=True, indent=4))
+  print(json.dumps(Neighbours(config).getStruct(), sort_keys=True, indent=4))
   sys.exit(1)
 
 extResponddClient = ResponddClient(config)

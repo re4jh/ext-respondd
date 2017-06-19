@@ -72,9 +72,6 @@ class ResponddClient:
       print("unknown command: " + request)
       return
 
-    print(response.getJSON(request))
-    return
-
     if compress:
       sock.sendto(response.getJSONCompressed(request), sender)
     else:

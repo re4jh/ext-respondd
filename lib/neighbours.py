@@ -48,7 +48,7 @@ class Neighbours(Respondd):
 
     return j
 
-  def get(self):
+  def _get(self):
     j = {"batadv": {}}
     stationDump = None
     if 'mesh-wlan' in self._config:

@@ -113,7 +113,7 @@ class Statistics(Respondd):
 
     return j
 
-  def get(self):
+  def _get(self):
     j = {
       "clients":  self.getClients(),
       "traffic": self.getTraffic(),
