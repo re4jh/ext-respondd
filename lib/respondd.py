@@ -32,7 +32,7 @@ class Respondd:
     return j
 
   def getJSON(self, root=None):
-    return bytes(json.dumps(self.getStruct(), separators=(',', ':')), 'UTF-8')
+    return bytes(json.dumps(self.getStruct(root), separators=(',', ':')), 'UTF-8')
 
   def getJSONCompressed(self, root=None):
     return self.compress(self.getJSON(root))
