@@ -14,12 +14,13 @@ class Statistics(Respondd):
     Respondd.__init__(self, config)
 
   def getClients(self):
+    j = {"total": 0, "wifi": 0}
+
+    batmanMAC = lib.helper.getDevice_MAC(self._config['batman'])
+
     output = subprocess.check_output(["batctl", "-m", self._config['batman'], "tl", "-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
-    batadv_mac = lib.helper.getDevice_MAC(self._config['batman'])
-
-    j = {"total": 0, "wifi": 0}
 
     for line in lines:
       # batman-adv -> translation-table.c -> batadv_tt_local_seq_print_text
@@ -33,7 +34,7 @@ class Statistics(Respondd):
       # * c0:11:73:b2:8f:dd   -1 [.P..W.]   1.710   (0xe680a836)
       ml = re.match(r"^\s\*\s([0-9a-f:]+)\s+-\d\s\[([RPNXWI\.]+)\]", line, re.I)
       if ml:
-        if not batadv_mac == ml.group(1): # Filter bat0
+        if not batmanMAC == ml.group(1): # Filter bat0
           if not ml.group(1).startswith('33:33:') and not ml.group(1).startswith('01:00:5e:'): # Filter Multicast
             j["total"] += 1
             if ml.group(2)[4] == 'W':
@@ -65,7 +66,8 @@ class Statistics(Respondd):
     )
 
   def getFastd(self):
-    fastd_data = b""
+    dataFastd = b""
+
     try:
       sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
       sock.connect(config["fastd_socket"])
@@ -77,13 +79,14 @@ class Statistics(Respondd):
       data = sock.recv(1024)
       if not data:
         break
-      fastd_data += data
+      dataFastd += data
 
     sock.close()
-    return json.loads(fastd_data.decode("utf-8"))
+    return json.loads(dataFastd.decode("utf-8"))
 
   def getMeshVPNPeers(self):
     j = {}
+
     if "fastd_socket" in self._config:
       fastd = self.getFastd()
       for peer in fastd["peers"].values():
@@ -99,10 +102,11 @@ class Statistics(Respondd):
       return None
 
   def getGateway(self):
+    j = None
+
     output = subprocess.check_output(["batctl", "-m", self._config['batman'], "gwl", "-n"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
-    j = None
 
     for line in lines:
       gw_line = re.match(r"^(\*|=>) +([0-9a-f:]+) \([\d ]+\) ([0-9a-f:]+)", line)
@@ -133,6 +137,7 @@ class Statistics(Respondd):
 
     gateway = self.getGateway()
     if gateway != None:
-        j = lib.helper.merge(j, gateway)
+      j = lib.helper.merge(j, gateway)
+
     return j
 

@@ -13,8 +13,9 @@ class Nodeinfo(Respondd):
   def __init__(self, config):
     Respondd.__init__(self, config)
 
-  def getDevice_Addresses(self, dev):
+  def getDeviceAddresses(self, dev):
     l = []
+
     try:
       for ip6 in netif.ifaddresses(dev)[netif.AF_INET6]:
         raw6 = ip6['addr'].split('%')
@@ -28,9 +29,10 @@ class Nodeinfo(Respondd):
 
     return l
 
-  def getBat0_Interfaces(self):
+  def getBatmanInterfaces(self, dev):
     j = {}
-    output = subprocess.check_output(["batctl", "-m", self._config['batman'], "if"])
+
+    output = subprocess.check_output(["batctl", "-m", dev, "if"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
 
@@ -65,22 +67,24 @@ class Nodeinfo(Respondd):
 
   def getCPUInfo(self):
     j = {}
+
     with open("/proc/cpuinfo", 'r') as fh:
       for line in fh:
         ml = re.match(r"^(.+?)[\t ]+:[\t ]+(.*)$", line, re.I)
 
         if ml:
           j[ml.group(1)] = ml.group(2)
+
     return j
 
   def _get(self):
     j = {
       "hostname": socket.gethostname(),
       "network": {
-        "addresses": self.getDevice_Addresses(self._config['bridge']),
+        "addresses": self.getDeviceAddresses(self._config['bridge']),
         "mesh": {
           "bat0": {
-            "interfaces": self.getBat0_Interfaces()
+            "interfaces": self.getBatmanInterfaces(self._config['batman'])
           }
         },
         "mac": lib.helper.getDevice_MAC(self._config["batman"])
@@ -118,6 +122,7 @@ class Nodeinfo(Respondd):
         }
       except:
         pass
-    return lib.helper.merge(j, self._aliases["nodeinfo"])
+
+    return lib.helper.merge(j, self._aliasOverlay["nodeinfo"])
 
 

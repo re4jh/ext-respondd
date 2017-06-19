@@ -18,8 +18,8 @@ options = vars(args)
 
 config = {}
 try:
-  with open("config.json", 'r') as cfg_handle:
-    config = json.load(cfg_handle)
+  with open("config.json", 'r') as fh:
+    config = json.load(fh)
 except IOError:
   raise
 

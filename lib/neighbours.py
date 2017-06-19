@@ -11,11 +11,11 @@ class Neighbours(Respondd):
   def __init__(self, config):
     Respondd.__init__(self, config)
 
-  def getStationDump(self, dev_list):
+  def getStationDump(self, devList):
     j = {}
-    for dev in dev_list:
+
+    for dev in devList:
       try:
-        # iw dev ibss3 station dump
         output = subprocess.check_output(["iw", "dev", dev, "station", "dump"])
         output_utf8 = output.decode("utf-8")
         lines = output_utf8.splitlines()
@@ -30,32 +30,35 @@ class Neighbours(Respondd):
           else:
             ml = re.match(r"^[\t ]+([^:]+):[\t ]+([^ ]+)", line, re.I)
             if ml:
-              j[mac][ml.group(1)] = ml.group(2)
+              j[mac][ ml.group(1) ] = ml.group(2)
       except:
           pass
     return j
 
-  def getMesh_Interfaces(self):
+  def getMeshInterfaces(self, batmanDev):
     j = {}
-    output = subprocess.check_output(["batctl", "-m", self._config['batman'], "if"])
+
+    output = subprocess.check_output(["batctl", "-m", batmanDev, "if"])
     output_utf8 = output.decode("utf-8")
     lines = output_utf8.splitlines()
 
     for line in lines:
-      dev_re = re.match(r"^([^:]*)", line)
-      dev = dev_re.group(1)
+      ml = re.match(r"^([^:]*)", line)
+      dev = ml.group(1)
       j[dev] = lib.helper.getDevice_MAC(dev)
 
     return j
 
   def _get(self):
     j = {"batadv": {}}
+
     stationDump = None
+
     if 'mesh-wlan' in self._config:
       j["wifi"] = {}
       stationDump = self.getStationDump(self._config["mesh-wlan"])
 
-    mesh_ifs = self.getMesh_Interfaces()
+    meshInterfaces = self.getMeshInterfaces(self._config['batman'])
 
     output = subprocess.check_output(["batctl", "-m", self._config['batman'], "o", "-n"])
     output_utf8 = output.decode("utf-8")
@@ -67,32 +70,33 @@ class Neighbours(Respondd):
 
       if ml:
         dev = ml.group(5)
-        mac_origin = ml.group(1)
-        mac_nhop = ml.group(4)
+        macOrigin = ml.group(1)
+        macNexthop = ml.group(4)
         tq = ml.group(3)
         lastseen = ml.group(2)
 
-        if mac_origin == mac_nhop:
+        if macOrigin == macNexthop:
           if 'mesh-wlan' in self._config and dev in self._config["mesh-wlan"] and not stationDump is None:
-            if not mesh_ifs[dev] in j["wifi"]:
-              j["wifi"][mesh_ifs[dev]] = {}
-              j["wifi"][mesh_ifs[dev]]["neighbours"] = {}
+            if not meshInterfaces[dev] in j["wifi"]:
+              j["wifi"][ meshInterfaces[dev] ] = {}
+              j["wifi"][ meshInterfaces[dev] ]["neighbours"] = {}
 
-            if mac_origin in stationDump:
-              j["wifi"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
-                "signal": stationDump[mac_origin]["signal"],
+            if macOrigin in stationDump:
+              j["wifi"][ meshInterfaces[dev] ]["neighbours"][macOrigin] = {
+                "signal": stationDump[macOrigin]["signal"],
                 "noise": 0, # TODO: fehlt noch
-                "inactive": stationDump[mac_origin]["inactive time"]
+                "inactive": stationDump[macOrigin]["inactive time"]
               }
 
-          if dev in mesh_ifs:
-            if not mesh_ifs[dev] in j["batadv"]:
-              j["batadv"][mesh_ifs[dev]] = {}
-              j["batadv"][mesh_ifs[dev]]["neighbours"] = {}
+          if dev in meshInterfaces:
+            if not meshInterfaces[dev] in j["batadv"]:
+              j["batadv"][ meshInterfaces[dev] ] = {}
+              j["batadv"][ meshInterfaces[dev] ]["neighbours"] = {}
 
-            j["batadv"][mesh_ifs[dev]]["neighbours"][mac_origin] = {
+            j["batadv"][ meshInterfaces[dev] ]["neighbours"][macOrigin] = {
               "tq": int(tq),
               "lastseen": float(lastseen)
             }
+
     return j
 

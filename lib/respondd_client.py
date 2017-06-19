@@ -45,41 +45,39 @@ class ResponddClient:
   def start(self):
     while True:
       if select.select([self._sock], [], [], 1)[0]:
-        msg, sender = self._sock.recvfrom(2048)
-#        if options["verbose"]:
-#          print(msg)
+        msg, sourceAddress = self._sock.recvfrom(2048)
 
-        msg_spl = str(msg, 'UTF-8').split(" ")
+        msgSplit = str(msg, 'UTF-8').split(" ")
 
-        if msg_spl[0] == 'GET': # multi_request
-          for req in msg_spl[1:]:
-            self.sendResponse(sender, req, True)
+        if msgSplit[0] == 'GET': # multi_request
+          for request in msgSplit[1:]:
+            self.sendResponse(sourceAddress, request, True)
         else: # single_request
-          self.sendResponse(sender, msg_spl[0], False)
+          self.sendResponse(sourceAddress, msgSplit[0], False)
 
-  def sendResponse(self, sender, request, compress):
+  def sendResponse(self, destAddress, responseType, withCompression):
     if not self.__RateLimit is None and not self.__RateLimit.limit():
       print("rate limit reached!")
       return
 
-    response = None
-    if request == 'statistics':
-      response = self._statistics
-    elif request == 'nodeinfo':
-      response = self._nodeinfo
-    elif request == 'neighbours':
-      response = self._neighbours
+    responseClass = None
+    if responseType == 'statistics':
+      responseClass = self._statistics
+    elif responseType == 'nodeinfo':
+      responseClass = self._nodeinfo
+    elif responseType == 'neighbours':
+      responseClass = self._neighbours
     else:
-      print("unknown command: " + request)
+      print("unknown command: " + responseType)
       return
 
     if not self._config["dry_run"]:
-      if compress:
-        self._sock.sendto(response.getJSONCompressed(request), sender)
+      if withCompression:
+        self._sock.sendto(responseClass.getJSONCompressed(responseType), destAddress)
       else:
-        self._sock.sendto(response.getJSON(request), sender)
+        self._sock.sendto(responseClass.getJSON(responseType), destAddress)
 
     if self._config["verbose"] or self._config["dry_run"]:
-      print("%35s %5d %13s: " % (sender[0], sender[1], request), end='')
-      print(json.dumps(response.getStruct(request), sort_keys=True, indent=4))
+      print("%35s %5d %13s: " % (destAddress[0], destAddress[1], responseType), end='')
+      print(json.dumps(responseClass.getStruct(responseType), sort_keys=True, indent=4))
 

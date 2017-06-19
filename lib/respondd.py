@@ -8,40 +8,40 @@ import lib.helper
 class Respondd:
   def __init__(self, config):
     self._config = config
-    self._aliases = {}
+    self._aliasOverlay = {}
     try:
-      with open("alias.json", 'r') as cfg_handle:
-        self._aliases = json.load(cfg_handle)
+      with open("alias.json", 'r') as fh:
+        self._aliasOverlay = json.load(fh)
     except IOError:
       raise
       pass
 
   def getNode_ID(self):
-    if 'node_id' in self._aliases["nodeinfo"]:
-      return self._aliases["nodeinfo"]["node_id"]
+    if 'node_id' in self._aliasOverlay["nodeinfo"]:
+      return self._aliasOverlay["nodeinfo"]["node_id"]
     else:
       return lib.helper.getDevice_MAC(self._config["batman"]).replace(':', '')
 
-  def getStruct(self, root=None):
+  def getStruct(self, rootName=None):
     j = self._get()
     j['node_id'] = self.getNode_ID()
-    if not root is None:
+    if not rootName is None:
       j_tmp = j
       j = {}
-      j[root] = j_tmp
+      j[rootName] = j_tmp
     return j
 
-  def getJSON(self, root=None):
-    return bytes(json.dumps(self.getStruct(root), separators=(',', ':')), 'UTF-8')
+  def getJSON(self, rootName=None):
+    return bytes(json.dumps(self.getStruct(rootName), separators=(',', ':')), 'UTF-8')
 
-  def getJSONCompressed(self, root=None):
-    return self.compress(self.getJSON(root))
+  def getJSONCompressed(self, rootName=None):
+    return self.compress(self.getJSON(rootName))
 
   def compress(self, data):
     encoder = zlib.compressobj(zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, -15) # The data may be decompressed using zlib and many zlib bindings using -15 as the window size parameter.
-    gzip_data = encoder.compress(data)
-    gzip_data = gzip_data + encoder.flush()
-    return gzip_data
+    dataGzip = encoder.compress(data)
+    dataGzip+= encoder.flush()
+    return dataGzip
 
   def _get(self):
     return {}
