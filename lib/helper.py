@@ -2,15 +2,20 @@
 
 import netifaces as netif
 import subprocess
-
-def toUTF8(line):
-    return line.decode("utf-8")
+import sys
 
 def call(cmdnargs):
-    output = subprocess.check_output(cmdnargs)
+  try:
+    output = subprocess.check_output(cmdnargs, stderr=subprocess.STDOUT)
     lines = output.splitlines()
-    lines = [toUTF8(line) for line in lines]
+    lines = [line.decode('utf-8') for line in lines]
     return lines
+  except subprocess.CalledProcessError as err:
+    print(err)
+    return []
+  except:
+    print(str(sys.exc_info()[0]))
+    return []
 
 def merge(a, b):
   if isinstance(a, dict) and isinstance(b, dict):
@@ -23,10 +28,11 @@ def merge(a, b):
 
   return a if b is None else b
 
-def getDevice_MAC(dev):
+def getInterfaceMAC(interface):
   try:
-    interface = netif.ifaddresses(dev)
+    interface = netif.ifaddresses(interface)
     mac = interface[netif.AF_LINK]
     return mac[0]['addr']
   except:
     return None
+

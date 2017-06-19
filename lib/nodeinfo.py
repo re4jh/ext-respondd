@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import socket
-import netifaces as netif
-import subprocess
 import re
+import netifaces as netif
 
 from lib.respondd import Respondd
 import lib.helper
@@ -13,116 +12,120 @@ class Nodeinfo(Respondd):
   def __init__(self, config):
     Respondd.__init__(self, config)
 
-  def getDeviceAddresses(self, dev):
-    l = []
+  @staticmethod
+  def getInterfaceAddresses(interface):
+    addresses = []
 
     try:
-      for ip6 in netif.ifaddresses(dev)[netif.AF_INET6]:
-        raw6 = ip6['addr'].split('%')
-        l.append(raw6[0])
+      for ip6 in netif.ifaddresses(interface)[netif.AF_INET6]:
+        addresses.append(ip6['addr'].split('%')[0])
 
-      for ip in netif.ifaddresses(dev)[netif.AF_INET]:
-        raw = ip['addr'].split('%')
-        l.append(raw[0])
+      for ip in netif.ifaddresses(interface)[netif.AF_INET]:
+        addresses.append(ip['addr'].split('%')[0])
     except:
       pass
 
-    return l
+    return addresses
 
-  def getBatmanInterfaces(self, dev):
-    j = {}
+  def getBatmanInterfaces(self, batmanInterface):
+    ret = {}
 
-    output = subprocess.check_output(["batctl", "-m", dev, "if"])
-    output_utf8 = output.decode("utf-8")
-    lines = output_utf8.splitlines()
-
+    lines = lib.helper.call(['batctl', '-m', batmanInterface, 'if'])
     for line in lines:
-      dev_line = re.match(r"^([^:]*)", line)
-      nif = dev_line.group(0)
+      lineMatch = re.match(r'^([^:]*)', line)
+      interface = lineMatch.group(0)
 
-      if_group = ""
-      if "fastd" in self._config and nif == self._config["fastd"]: # keep for compatibility
-        if_group = "tunnel"
-      elif nif.find("l2tp") != -1:
-        if_group = "l2tp"
-      elif "mesh-vpn" in self._config and nif in self._config["mesh-vpn"]:
-        if_group = "tunnel"
-      elif "mesh-wlan" in self._config and nif in self._config["mesh-wlan"]:
-        if_group = "wireless"
+      interfaceType = ''
+      if 'fastd' in self._config and interface == self._config['fastd']: # keep for compatibility
+        interfaceType = 'tunnel'
+      elif interface.find('l2tp') != -1:
+        interfaceType = 'l2tp'
+      elif 'mesh-vpn' in self._config and interface in self._config['mesh-vpn']:
+        interfaceType = 'tunnel'
+      elif 'mesh-wlan' in self._config and interface in self._config['mesh-wlan']:
+        interfaceType = 'wireless'
       else:
-        if_group = "other"
+        interfaceType = 'other'
 
-      if not if_group in j:
-        j[if_group] = []
+      if interfaceType not in ret:
+        ret[interfaceType] = []
 
-      j[if_group].append(lib.helper.getDevice_MAC(nif))
+      ret[interfaceType].append(lib.helper.getInterfaceMAC(interface))
 
-    if "l2tp" in j:
-      if "tunnel" in j:
-        j["tunnel"] = j["tunnel"] + j["l2tp"]
+    if 'l2tp' in ret:
+      if 'tunnel' in ret:
+        ret['tunnel'] += ret['l2tp']
       else:
-        j["tunnel"] = j["l2tp"]
+        ret['tunnel'] = ret['l2tp']
 
-    return j
+    return ret
 
-  def getCPUInfo(self):
-    j = {}
+  @staticmethod
+  def getCPUInfo():
+    ret = {}
 
-    with open("/proc/cpuinfo", 'r') as fh:
+    with open('/proc/cpuinfo', 'r') as fh:
       for line in fh:
-        ml = re.match(r"^(.+?)[\t ]+:[\t ]+(.*)$", line, re.I)
+        lineMatch = re.match(r'^(.+?)[\t ]+:[\t ]+(.*)$', line, re.I)
+        if lineMatch:
+          ret[lineMatch.group(1)] = lineMatch.group(2)
 
-        if ml:
-          j[ml.group(1)] = ml.group(2)
+    return ret
 
-    return j
+  @staticmethod
+  def getVPN(batmanInterface):
+    lines = lib.helper.call(['batctl', '-m', batmanInterface, 'gw_mode'])
+    if re.match(r'^server', lines[0]):
+      return True
+    else:
+      return False
 
   def _get(self):
-    j = {
-      "hostname": socket.gethostname(),
-      "network": {
-        "addresses": self.getDeviceAddresses(self._config['bridge']),
-        "mesh": {
-          "bat0": {
-            "interfaces": self.getBatmanInterfaces(self._config['batman'])
+    ret = {
+      'hostname': socket.gethostname(),
+      'network': {
+        'addresses': self.getInterfaceAddresses(self._config['bridge']),
+        'mesh': {
+          'bat0': {
+            'interfaces': self.getBatmanInterfaces(self._config['batman'])
           }
         },
-        "mac": lib.helper.getDevice_MAC(self._config["batman"])
+        'mac': lib.helper.getInterfaceMAC(self._config['batman'])
       },
-      "software": {
-        "firmware": {
-          "base": lib.helper.call(['lsb_release', '-is'])[0],
-          "release": lib.helper.call(['lsb_release', '-ds'])[0]
+      'software': {
+        'firmware': {
+          'base': lib.helper.call(['lsb_release', '-is'])[0],
+          'release': lib.helper.call(['lsb_release', '-ds'])[0]
         },
-        "batman-adv": {
-          "version": open('/sys/module/batman_adv/version').read().strip(),
-#                "compat": # /lib/gluon/mesh-batman-adv-core/compat
+        'batman-adv': {
+          'version': open('/sys/module/batman_adv/version').read().strip(),
+#                'compat': # /lib/gluon/mesh-batman-adv-core/compat
         },
-        "status-page": {
-          "api": 0
+        'status-page': {
+          'api': 0
         },
-        "autoupdater": {
-          "enabled": False
+        'autoupdater': {
+          'enabled': False
         }
       },
-      "hardware": {
-        "model": self.getCPUInfo()["model name"],
-        "nproc": int(lib.helper.call(['nproc'])[0])
+      'hardware': {
+        'model': self.getCPUInfo()['model name'],
+        'nproc': int(lib.helper.call(['nproc'])[0])
       },
-      "owner": {},
-      "system": {},
-      "location": {}
+      'owner': {},
+      'system': {},
+      'location': {},
+      'vpn': self.getVPN(self._config['batman'])
     }
 
-    if 'mesh-vpn' in self._config and len(self._config["mesh-vpn"]) > 0:
+    if 'mesh-vpn' in self._config and len(self._config['mesh-vpn']) > 0:
       try:
-        j["software"]["fastd"] = {
-          "version": lib.helper.call(['fastd', '-v'])[0].split(' ')[1],
-          "enabled": True
+        ret['software']['fastd'] = {
+          'version': lib.helper.call(['fastd', '-v'])[0].split(' ')[1],
+          'enabled': True
         }
       except:
         pass
 
-    return lib.helper.merge(j, self._aliasOverlay["nodeinfo"])
-
+    return lib.helper.merge(ret, self._aliasOverlay['nodeinfo'])
 

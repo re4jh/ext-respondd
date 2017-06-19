@@ -4,8 +4,8 @@ import json
 import argparse
 import sys
 
-
 from lib.respondd_client import ResponddClient
+import lib.helper
 
 parser = argparse.ArgumentParser()
 
@@ -16,12 +16,18 @@ parser.add_argument('-t', '--dry-run', action='store_true', help='Dry Run', requ
 args = parser.parse_args()
 options = vars(args)
 
-config = {}
+config = {
+  'bridge': 'br-client',
+  'batman': 'bat0',
+  'port': 1001,
+  'addr': 'ff02::2:1001'
+}
+
 try:
   with open("config.json", 'r') as fh:
-    config = json.load(fh)
+    config = lib.helper.merge(config, json.load(fh))
 except IOError:
-  raise
+  print('no config.json, use defaults')
 
 if options["test"]:
   from lib.nodeinfo import Nodeinfo
@@ -32,8 +38,8 @@ if options["test"]:
   print(json.dumps(Neighbours(config).getStruct(), sort_keys=True, indent=4))
   sys.exit(1)
 
-config["verbose"] = options["verbose"]
-config["dry_run"] = options["dry_run"]
+config['verbose'] = options['verbose']
+config['dry_run'] = options['dry_run']
 
 extResponddClient = ResponddClient(config)
 extResponddClient.start()

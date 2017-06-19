@@ -18,7 +18,7 @@ class rateLimit: # rate limit like iptables limit (per minutes)
     tDiff = tNow - self.tLast
     self.tLast = tNow
 
-    self.bucket+= (tDiff / (60 / self.rate_limit))
+    self.bucket += (tDiff / (60 / self.rate_limit))
     if self.bucket > self.rate_burst:
       self.bucket = self.rate_burst
 
