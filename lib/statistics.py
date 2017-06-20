@@ -51,7 +51,7 @@ class Statistics(Respondd):
       lineSplit = line.strip().split(':', 1)
       name = lineSplit[0]
       value = lineSplit[1].strip()
-      traffic[name] = value
+      traffic[name] = int(value)
 
     ret = {
       'tx': {
@@ -86,7 +86,7 @@ class Statistics(Respondd):
     for line in lines:
       lineSplit = line.split(' ', 1)
       name = lineSplit[0][:-1]
-      value = lineSplit[1].strip().split(' ', 1)[0]
+      value = int(lineSplit[1].strip().split(' ', 1)[0])
 
       if name == 'MemTotal':
         ret['total'] = value

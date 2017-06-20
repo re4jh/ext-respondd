@@ -9,13 +9,14 @@ def call(cmdnargs):
     output = subprocess.check_output(cmdnargs, stderr=subprocess.STDOUT)
     lines = output.splitlines()
     lines = [line.decode('utf-8') for line in lines]
-    return lines
   except subprocess.CalledProcessError as err:
     print(err)
-    return []
   except:
     print(str(sys.exc_info()[0]))
-    return []
+  else:
+    return lines
+
+  return []
 
 def merge(a, b):
   if isinstance(a, dict) and isinstance(b, dict):

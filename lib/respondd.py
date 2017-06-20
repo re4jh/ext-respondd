@@ -10,13 +10,14 @@ class Respondd:
     self._config = config
     self._aliasOverlay = {}
     try:
-      with open('alias.json', 'r') as fh:
+      with open('alias.json', 'r') as fh: # TODO: prevent loading more then once !
         self._aliasOverlay = json.load(fh)
     except IOError:
-      raise
+      print('can\'t load alias.json!')
+      pass
 
   def getNodeID(self):
-    if 'node_id' in self._aliasOverlay['nodeinfo']:
+    if 'nodeinfo' in self._aliasOverlay and 'node_id' in self._aliasOverlay['nodeinfo']:
       return self._aliasOverlay['nodeinfo']['node_id']
     else:
       return lib.helper.getInterfaceMAC(self._config['batman']).replace(':', '')

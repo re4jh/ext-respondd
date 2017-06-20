@@ -73,7 +73,7 @@ class Nodeinfo(Respondd):
     return ret
 
   @staticmethod
-  def getVPN(batmanInterface):
+  def getVPNFlag(batmanInterface):
     lines = lib.helper.call(['batctl', '-m', batmanInterface, 'gw_mode'])
     if re.match(r'^server', lines[0]):
       return True
@@ -115,7 +115,7 @@ class Nodeinfo(Respondd):
       'owner': {},
       'system': {},
       'location': {},
-      'vpn': self.getVPN(self._config['batman'])
+      'vpn': self.getVPNFlag(self._config['batman'])
     }
 
     if 'mesh-vpn' in self._config and len(self._config['mesh-vpn']) > 0:
@@ -127,5 +127,8 @@ class Nodeinfo(Respondd):
       except:
         pass
 
-    return lib.helper.merge(ret, self._aliasOverlay['nodeinfo'])
+    if 'nodeinfo' in self._aliasOverlay:
+      return lib.helper.merge(ret, self._aliasOverlay['nodeinfo'])
+    else:
+      return ret
 
