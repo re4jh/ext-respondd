@@ -2,6 +2,7 @@
 
 import json
 import zlib
+import time
 
 import lib.helper
 
@@ -9,6 +10,8 @@ class Respondd:
   def __init__(self, config):
     self._config = config
     self._aliasOverlay = {}
+    self.__cache = {}
+    self.__cacheTime = 0
     try:
       with open('alias.json', 'r') as fh: # TODO: prevent loading more then once !
         self._aliasOverlay = json.load(fh)
@@ -23,12 +26,19 @@ class Respondd:
       return lib.helper.getInterfaceMAC(self._config['batman']).replace(':', '')
 
   def getStruct(self, rootName=None):
-    ret = self._get()
-    ret['node_id'] = self.getNodeID()
+    if 'caching' in self._config and time.time() - self.__cacheTime <= self._config['caching']:
+      ret = self.__cache
+    else:
+      ret = self._get()
+      self.__cache = ret
+      self.__cacheTime = time.time()
+      ret['node_id'] = self.getNodeID()
+
     if rootName is not None:
       ret_tmp = ret
       ret = {}
       ret[rootName] = ret_tmp
+
     return ret
 
   def getJSON(self, rootName=None):

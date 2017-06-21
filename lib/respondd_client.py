@@ -4,6 +4,7 @@ import socket
 import select
 import struct
 import json
+import time
 
 from lib.ratelimit import rateLimit
 from lib.nodeinfo import Nodeinfo
@@ -50,6 +51,8 @@ class ResponddClient:
       print('rate limit reached!')
       return
 
+    tStart = time.time()
+
     responseClass = None
     if responseType == 'statistics':
       responseClass = self._statistics
@@ -68,6 +71,6 @@ class ResponddClient:
         self._sock.sendto(responseClass.getJSON(responseType), destAddress)
 
     if self._config['verbose'] or self._config['dry_run']:
-      print('%35s %5d %13s: ' % (destAddress[0], destAddress[1], responseType), end='')
+      print('%14.3f %35s %5d %13s %5.3f: ' % (tStart, destAddress[0], destAddress[1], responseType, time.time() - tStart), end='')
       print(json.dumps(responseClass.getStruct(responseType), sort_keys=True, indent=4))
 

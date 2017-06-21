@@ -4,6 +4,7 @@ import socket
 import re
 import sys
 import json
+import os
 
 from lib.respondd import Respondd
 import lib.helper
@@ -148,6 +149,11 @@ class Statistics(Respondd):
 
     return ret
 
+  @staticmethod
+  def getRootFS():
+    statFS = os.statvfs('/')
+    return 1 - (statFS.f_bfree / statFS.f_blocks)
+
   def _get(self):
     ret = {
       'clients': self.getClients(),
@@ -155,6 +161,7 @@ class Statistics(Respondd):
       'idletime': float(open('/proc/uptime').read().split(' ')[1]),
       'loadavg': float(open('/proc/loadavg').read().split(' ')[0]),
       'memory': self.getMemory(),
+      'rootfs': round(self.getRootFS(), 4),
       'processes': dict(zip(('running', 'total'), map(int, open('/proc/loadavg').read().split(' ')[3].split('/')))),
       'uptime': float(open('/proc/uptime').read().split(' ')[0]),
       'mesh_vpn' : { # HopGlass-Server: node.flags.uplink = parsePeerGroup(_.get(n, 'statistics.mesh_vpn'))
