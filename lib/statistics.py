@@ -159,7 +159,7 @@ class Statistics(Respondd):
       'clients': self.getClients(),
       'traffic': self.getTraffic(),
       'memory': self.getMemory(),
-      'rootfs': round(self.getRootFS(), 4),
+      'rootfs_usage': round(self.getRootFS(), 4),
       'idletime': float(open('/proc/uptime').read().split(' ')[0]),
       'uptime': float(open('/proc/uptime').read().split(' ')[1]),
       'loadavg': float(open('/proc/loadavg').read().split(' ')[0]),
