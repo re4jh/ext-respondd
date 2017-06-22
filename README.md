@@ -24,8 +24,8 @@ Startparameter for ext-respondd.
 Copy `config.json.example` to `config.json` and change it to match your server configuration.  
 (`cp config.json.example config.json`)
 
- * `batman` (string) (Needed: typical bat0)
- * `bridge` (string) (Needed: typical br-client)
+ * `batman` (string) (Optional: default bat0)
+ * `bridge` (string) (Optional: default br-client)
  * `mesh-wlan` (array of string) (Optional: Ad-Hoc batman-Mesh)
  * `mesh-vpn` (array of string) (Optional: fastd, GRE, L2TP batman-Mesh)
  * `fastd_socket` (string) (Optional: needed for uplink-flag)
@@ -48,23 +48,6 @@ cp ext-respondd.service.example /lib/systemd/system/ext-respondd.service
 systemctl enable ext-respondd
 systemctl start ext-respondd
 ```
-
-
-## Notes
-Add this to your aliases.json in your [HopGlass-Server](https://github.com/hopglass/hopglass-server) if this a gateway.
-
-```
-  "gw2": {
-    "nodeinfo": {
-      "hostname": "Gateway 2",
-      "node_id": "gw2"
-    },
-    "flags": {
-      "gateway": true
-    }
-  }
-```
-
 
 ## Related projects
 
