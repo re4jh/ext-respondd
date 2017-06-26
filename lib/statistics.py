@@ -160,8 +160,8 @@ class Statistics(Respondd):
       'traffic': self.getTraffic(),
       'memory': self.getMemory(),
       'rootfs_usage': round(self.getRootFS(), 4),
-      'idletime': float(open('/proc/uptime').read().split(' ')[0]),
-      'uptime': float(open('/proc/uptime').read().split(' ')[1]),
+      'idletime': float(open('/proc/uptime').read().split(' ')[1]),
+      'uptime': float(open('/proc/uptime').read().split(' ')[0]),
       'loadavg': float(open('/proc/loadavg').read().split(' ')[0]),
       'processes': dict(zip(('running', 'total'), map(int, open('/proc/loadavg').read().split(' ')[3].split('/')))),
       'mesh_vpn' : { # HopGlass-Server: node.flags.uplink = parsePeerGroup(_.get(n, 'statistics.mesh_vpn'))
