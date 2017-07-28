@@ -5,6 +5,9 @@ import select
 import struct
 import json
 import time
+import re
+
+import lib.helper
 
 from lib.ratelimit import rateLimit
 from lib.nodeinfo import Nodeinfo
@@ -28,12 +31,21 @@ class ResponddClient:
 
     self._sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
 
-  def start(self):
-    if_idx = socket.if_nametoindex(self._config['bridge'])
-    group = socket.inet_pton(socket.AF_INET6, self._config['addr']) + struct.pack('I', if_idx)
-    self._sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, group)
+  @staticmethod
+  def joinMCAST(sock, addr, ifname):
+    group = socket.inet_pton(socket.AF_INET6, addr)
+    if_idx = socket.if_nametoindex(ifname)
+    sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, group + struct.pack('I', if_idx))
 
+  def start(self):
     self._sock.bind(('::', self._config['port']))
+
+    lines = lib.helper.call(['batctl', '-m', self._config['batman'], 'if'])
+    for line in lines:
+      lineMatch = re.match(r'^([^:]*)', line)
+      self.joinMCAST(self._sock, self._config['addr'], lineMatch.group(1))
+
+    self.joinMCAST(self._sock, self._config['addr'], self._config['bridge'])
 
     while True:
       msg, sourceAddress = self._sock.recvfrom(2048)
@@ -68,7 +80,7 @@ class ResponddClient:
       if withCompression:
         self._sock.sendto(responseClass.getJSONCompressed(responseType), destAddress)
       else:
-        self._sock.sendto(responseClass.getJSON(responseType), destAddress)
+        self._sock.sendto(responseClass.getJSON(), destAddress)
 
     if self._config['verbose'] or self._config['dry_run']:
       print('%14.3f %35s %5d %13s %5.3f: ' % (tStart, destAddress[0], destAddress[1], responseType, time.time() - tStart), end='')
