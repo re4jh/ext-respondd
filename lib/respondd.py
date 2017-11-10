@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import json
-import zlib
 import time
 
 import lib.helper
@@ -40,19 +39,6 @@ class Respondd:
       ret[rootName] = ret_tmp
 
     return ret
-
-  def getJSON(self, rootName=None):
-    return bytes(json.dumps(self.getStruct(rootName), separators=(',', ':')), 'UTF-8')
-
-  def getJSONCompressed(self, rootName=None):
-    return self.compress(self.getJSON(rootName))
-
-  @staticmethod
-  def compress(data):
-    encoder = zlib.compressobj(zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, -15) # The data may be decompressed using zlib and many zlib bindings using -15 as the window size parameter.
-    dataGzip = encoder.compress(data)
-    dataGzip += encoder.flush()
-    return dataGzip
 
   @staticmethod
   def _get():

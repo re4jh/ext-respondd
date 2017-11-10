@@ -4,6 +4,7 @@ import socket
 import select
 import struct
 import json
+import zlib
 import time
 import re
 
@@ -52,18 +53,19 @@ class ResponddClient:
 
       msgSplit = str(msg, 'UTF-8').split(' ')
 
+      responseStruct = {}
       if msgSplit[0] == 'GET': # multi_request
         for request in msgSplit[1:]:
-          self.sendResponse(sourceAddress, request, True)
+          responseStruct[request] = self.buildStruct(request)
+          self.sendStruct(sourceAddress, responseStruct, True)
       else: # single_request
-        self.sendResponse(sourceAddress, msgSplit[0], False)
+        responseStruct = self.buildStruct(msgSplit[0])
+        self.sendStruct(sourceAddress, responseStruct, False)
 
-  def sendResponse(self, destAddress, responseType, withCompression):
+  def buildStruct(self, responseType):
     if self.__RateLimit is not None and not self.__RateLimit.limit():
       print('rate limit reached!')
       return
-
-    tStart = time.time()
 
     responseClass = None
     if responseType == 'statistics':
@@ -76,13 +78,21 @@ class ResponddClient:
       print('unknown command: ' + responseType)
       return
 
-    if not self._config['dry_run']:
-      if withCompression:
-        self._sock.sendto(responseClass.getJSONCompressed(responseType), destAddress)
-      else:
-        self._sock.sendto(responseClass.getJSON(), destAddress)
+    return responseClass.getStruct()
 
+  def sendStruct(self, destAddress, responseStruct, withCompression):
     if self._config['verbose'] or self._config['dry_run']:
-      print('%14.3f %35s %5d %13s %5.3f: ' % (tStart, destAddress[0], destAddress[1], responseType, time.time() - tStart), end='')
-      print(json.dumps(responseClass.getStruct(responseType), sort_keys=True, indent=4))
+      print('%14.3f %35s %5d: ' % (time.time(), destAddress[0], destAddress[1]), end='')
+      print(json.dumps(responseStruct, sort_keys=True, indent=4))
+
+    responseData = bytes(json.dumps(responseStruct, separators=(',', ':')), 'UTF-8')
+
+    if withCompression:
+      encoder = zlib.compressobj(zlib.Z_DEFAULT_COMPRESSION, zlib.DEFLATED, -15) # The data may be decompressed using zlib and many zlib bindings using -15 as the window size parameter.
+      responseData = encoder.compress(responseData)
+      responseData += encoder.flush()
+      # return compress(str.encode(json.dumps(ret)))[2:-4] # bug? (mesh-announce strip here)
+
+    if not self._config['dry_run']:
+      self._sock.sendto(responseData, destAddress)
 
