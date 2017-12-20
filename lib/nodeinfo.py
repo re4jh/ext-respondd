@@ -70,6 +70,9 @@ class Nodeinfo(Respondd):
         if lineMatch:
           ret[lineMatch.group(1)] = lineMatch.group(2)
 
+    if 'model name' not in ret:
+      ret["model name"] = ret["Processor"]
+
     return ret
 
   @staticmethod
