@@ -7,6 +7,7 @@ import json
 import zlib
 import time
 import re
+import fcntl
 
 import lib.helper
 
@@ -39,6 +40,8 @@ class ResponddClient:
     sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, group + struct.pack('I', if_idx))
 
   def start(self):
+    print(self._config['bridge'])
+    self._sock.setsockopt(socket.SOL_SOCKET,socket.SO_BINDTODEVICE,bytes(self._config['bridge'].encode()))
     self._sock.bind(('::', self._config['port']))
 
     lines = lib.helper.call(['batctl', '-m', self._config['batman'], 'if'])
