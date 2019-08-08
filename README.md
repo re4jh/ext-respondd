@@ -7,7 +7,7 @@
 
  * lsb_release
  * ethtool
- * python3.3
+ * python3 (>= 3.3)
  * python3-netifaces
  * batman-adv
 
@@ -57,5 +57,5 @@ Collecting data from respondd:
 
 Respondd for servers:
 * [ffho-respondd](https://github.com/FreifunkHochstift/ffho-respondd) from Freifunk Hochstift (fork of ext-respondd)
-* [ffnord-alfred-announce](https://github.com/ffnord/ffnord-alfred-announce) from FreiFunkNord
+* [mesh-announce](https://github.com/ffnord/mesh-announce) from Freifunk Nord
 * [py-respondd](https://github.com/descilla/py-respondd)
