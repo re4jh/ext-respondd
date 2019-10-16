@@ -1,6 +1,6 @@
 [Unit]
 Description=ext-respondd (respondd status for servers)
-After=syslog.target network.target
+After=syslog.target network-online.target
 
 [Service]
 Type=simple
