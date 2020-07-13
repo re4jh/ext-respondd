@@ -70,8 +70,10 @@ class Nodeinfo(Respondd):
                 if lineMatch:
                     ret[lineMatch.group(1)] = lineMatch.group(2)
 
-        if 'model name' not in ret:
+        if 'model name' not in ret and 'Processor' in ret:
             ret["model name"] = ret["Processor"]
+        elif 'processor' in ret:
+            ret["model name"] = ret["processor"]
 
         return ret
 
